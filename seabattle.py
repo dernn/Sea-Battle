@@ -1,16 +1,6 @@
 from random import randint
 
 
-class GUI:
-    def __init__(self, location):
-        self.location = location
-
-
-class Counter:
-    def __init__(self, count):
-        self.count = count
-
-
 class BoardException(Exception):
     pass
 
@@ -88,7 +78,7 @@ class Board:
             res += f"\n{i + 1} | " + " | ".join(row) + " |"
 
         if self.hide:
-            res = res.replace("O", "■")
+            res = res.replace("■", "0")
         return res
 
     def add_ship(self, ship):
@@ -145,6 +135,9 @@ class Board:
         print('Miss!')
         return False
 
+    def defeat(self):
+        return self.counter == len(self.shiplist)
+
     def begin(self):
         self.busy = []
 
@@ -195,44 +188,99 @@ class User(Player):
 
 
 class Game:
-    user = User
-    user_board = User.own_board
-    ai = AI
-    ai_board = AI.own_board
+
+    # 4 корабля на одну клетку
+    # 2 корабля на 2 клетки (3)
+    # 1 корабль на 3 клетки (2)
+
+    def __init__(self, size=6):
+        self.size = size
+        self.units = [3, 2, 2, 1, 1, 1, 1]  # масштабирование
+
+        player = self.random_board()
+        computer = self.random_board()
+        computer.hide = False
+
+        self.ai = AI(computer, player)
+        self.user = User(player, computer)
+
+    def try_board(self):
+        board = Board(size=self.size)
+        attempts = 0
+        for lgth in self.units:
+            while True:
+                attempts += 1
+                if attempts > 2000:
+                    return None
+                ship = Ship(Dot(randint(0, self.size), randint(0, self.size)), lgth, randint(0, 1))
+                try:
+                    board.add_ship(ship)
+                    break
+                except BoardWrongShipException:
+                    pass
+
+        board.begin()
+        return board
 
     def random_board(self):
-        return None
+        board = None
+        while board is None:
+            board = self.try_board()
+        return board
 
     @staticmethod
     def greet():
         print('============================')
         print('||       Sea Battle       ||')
         print('============================')
+        print('|| input format: x y      ||')
+        print('|| x  -  string #         ||')
+        print('|| y  -  column #         ||')
+        print('============================')
+        print()
+        input('Press Enter to begin...')
+
+    def show_boards(self):
+        print('-' * 30)
+        print("User's board:")
+        print(self.user.board)
+        print('-' * 30)
+        print('AI board:')
+        print(self.ai.board)
+        print('-' * 30)
 
     def loop(self):
-        return None
+        num = 0
+        while True:
+            self.show_boards()
+            if num % 2 == 0:
+                print("User's turn!")
+                repeat = self.user.move()
+            else:
+                print("AI turn!")
+                repeat = self.ai.move()
+
+            if repeat:
+                num -= 1
+
+            if self.ai.board.defeat():
+                self.show_boards()
+                print('-' * 30)
+                print("User wins!")
+                break
+
+            if self.user.board.defeat():
+                self.show_boards()
+                print('-' * 30)
+                print("AI wins!")
+                break
+
+            num += 1
 
     def start(self):
         self.greet()
+        self.loop()
 
 
-#   | 1 | 2 | 3 | 4 | 5 | 6 |
-#
-# 1 | О | О | О | О | О | О |
-#
-# 2 | О | О | О | О | О | О |
-#
-# 3 | О | О | О | О | О | О |
-#
-# 4 | О | О | О | О | О | О |
-#
-# 5 | О | О | О | О | О | О |
-#
-# 6 | О | О | О | О | О | О |
-
-# 1 корабль на 3 клетки
-# 2 корабля на 2 клетки
-# 4 корабля на 1 клетку
-
-begin = Game()
-begin.start()
+game = Game()
+game.start()
