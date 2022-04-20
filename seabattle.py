@@ -37,7 +37,7 @@ class Ship:
         self.head = head
         self.length = length
         self.direction = direction
-        self.hitpoint = length  # -1 при попадании
+        self.hitpoint = length
 
     @property
     def dots(self):
@@ -60,9 +60,7 @@ class Ship:
 
 
 class Board:
-    # размещение кораблей
-    # какая-то проверка на расположение
-    # хранить всех КЛЕТОК (не точек ?)
+
     def __init__(self, hide=False, size=6):
         self.hide = hide
         self.size = size
@@ -73,7 +71,7 @@ class Board:
         self.field = [['O'] * size for i in range(size)]
 
     def __str__(self):
-        res = "  | 1 | 2 | 3 | 4 | 5 | 6 |"
+        res = "  | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |"
         for i, row in enumerate(self.field):
             res += f"\n{i + 1} | " + " | ".join(row) + " |"
 
@@ -189,17 +187,13 @@ class User(Player):
 
 class Game:
 
-    # 4 корабля на одну клетку
-    # 2 корабля на 2 клетки (3)
-    # 1 корабль на 3 клетки (2)
-
-    def __init__(self, size=6):
+    def __init__(self, size=9):  # board scaling
         self.size = size
-        self.units = [3, 2, 2, 1, 1, 1, 1]  # масштабирование
+        self.units = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1]  # масштабирование
 
         player = self.random_board()
         computer = self.random_board()
-        computer.hide = False
+        computer.hide = True
 
         self.ai = AI(computer, player)
         self.user = User(player, computer)
