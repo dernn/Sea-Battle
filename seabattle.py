@@ -1,3 +1,6 @@
+from random import randint
+
+
 class GUI:
     def __init__(self, location):
         self.location = location
@@ -14,12 +17,12 @@ class BoardException(Exception):
 
 class BoardOutException(BoardException):
     def __str__(self):
-        return "Вы пытаетесь выстрелить за доску"
+        return 'You are trying to shoot off the board!'
 
 
 class BoardUsedException(BoardException):
     def __str__(self):
-        return "Вы уже стреляли в эту клетку"
+        return 'You already shot in that cage'
 
 
 class BoardWrongShipException(BoardException):
@@ -74,14 +77,13 @@ class Board:
         self.hide = hide
         self.size = size
 
-        self.shipcount = 0  # число сбитых кораблей
+        self.counter = 0  # число сбитых кораблей
         self.shiplist = []  # список кораблей
         self.busy = []  # занятые или стреляные точки
         self.field = [['O'] * size for i in range(size)]
 
     def __str__(self):
-        res = ""
-        res += "  | 1 | 2 | 3 | 4 | 5 | 6 |"
+        res = "  | 1 | 2 | 3 | 4 | 5 | 6 |"
         for i, row in enumerate(self.field):
             res += f"\n{i + 1} | " + " | ".join(row) + " |"
 
@@ -89,44 +91,107 @@ class Board:
             res = res.replace("O", "■")
         return res
 
-    def add_ship(self, unit):
-        if unit in self.field:
-            return True
-        else:
-            return None  # Exception
+    def add_ship(self, ship):
+        for dot in ship.dots:
+            if self.out(dot) or dot in self.busy:
+                raise BoardWrongShipException()
+        for dot in ship.dots:
+            self.field[dot.x][dot.y] = '■'
+            self.busy.append(dot)
 
-    def contour(self):
-        pass
+        self.shiplist.append(ship)
+        self.contour(ship)
+
+    def contour(self, ship, placing=False):
+        near = [
+            (-1, 1), (0, 1), (1, 1),
+            (-1, 0), (0, 0), (1, 0),
+            (-1, -1), (0, -1), (1, -1)
+        ]
+        for dot in ship.dots:
+            for dx, dy in near:
+                pt = Dot(dot.x + dx, dot.y + dy)
+                if not self.out(pt) and pt not in self.busy:
+                    if placing:
+                        self.field[pt.x][pt.y] = '.'
+                    self.busy.append(pt)
 
     def out(self, dot):
-        return not (0 <= dot.x < self.size) and (0 <= dot.y < self.size)
+        return not ((0 <= dot.x < self.size) and (0 <= dot.y < self.size))
 
-    def shot(self, mark):
-        if mark in self.field:
-            return True
+    def shot(self, dot):
+        if self.out(dot):
+            raise BoardOutException()
+
+        if dot in self.busy:
+            raise BoardUsedException()
         else:
-            return None  # Exception: за пределы + повторно
+            self.busy.append(dot)
+
+        for ship in self.shiplist:
+            if ship.hit(dot):
+                ship.hitpoint -= 1
+                self.field[dot.x][dot.y] = 'X'
+                if ship.hitpoint == 0:
+                    self.counter += 1
+                    self.contour(ship, placing=True)
+                    print('Ship destroyed!')
+                    return True
+                else:
+                    print('Ship hit!')
+                    return True
+
+        self.field[dot.x][dot.y] = '.'
+        print('Miss!')
+        return False
+
+    def begin(self):
+        self.busy = []
 
 
 class Player:
-    own_board = Board
-    enemy_board = Board
+    def __init__(self, board, enemy):
+        self.board = board
+        self.enemy = enemy
 
     def ask(self):
-        return None
+        raise NotImplementedError()
 
     def move(self):
-        return Player.ask() in Board.shot(None)
+        while True:
+            try:
+                target = self.ask()
+                repeat = self.enemy.shot(target)
+                return repeat
+            except BoardException as message:
+                print(message)
 
 
 class AI(Player):
     def ask(self):
-        return None
+        dot = Dot(randint(0, 5), randint(0, 5))
+        print(f'AI turn: {dot.x + 1} {dot.y + 1}')
+        return dot
 
 
 class User(Player):
     def ask(self):
-        return None
+        while True:
+            dot = input('Your turn: ').split()
+
+            if len(dot) != 2:
+                print(' Enter 2 coordinates! ')
+                continue
+
+            x, y = dot
+
+            if not x.isdigit() or not y.isdigit():
+                print(' Enter numbers! ')
+                continue
+
+            x, y = int(x), int(y)
+
+            return Dot(x - 1, y - 1)
 
 
 class Game:
