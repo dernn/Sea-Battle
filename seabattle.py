@@ -76,7 +76,7 @@ class Board:
             res += f"\n{i + 1} | " + " | ".join(row) + " |"
 
         if self.hide:
-            res = res.replace("■", "0")
+            res = res.replace("■", "O")
         return res
 
     def add_ship(self, ship):
