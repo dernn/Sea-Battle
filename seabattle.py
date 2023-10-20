@@ -12,7 +12,7 @@ class BoardOutException(BoardException):
 
 class BoardUsedException(BoardException):
     def __str__(self):
-        return 'You already shot in that cage'
+        return 'You already shot in that point'
 
 
 class BoardWrongShipException(BoardException):
@@ -68,7 +68,7 @@ class Board:
         self.counter = 0  # число сбитых кораблей
         self.shiplist = []  # список кораблей
         self.busy = []  # занятые или стреляные точки
-        self.field = [['O'] * size for i in range(size)]
+        self.field = [['O'] * size for _ in range(size)]
 
     def __str__(self):
         res = "  | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |"
@@ -126,7 +126,7 @@ class Board:
                     print('Ship destroyed!')
                     return True
                 else:
-                    print('Ship hit!')
+                    print('Hit!')
                     return True
 
         self.field[dot.x][dot.y] = '.'
